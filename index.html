@@ -3,102 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출고관리 시스템</title>
+    <title>통합 재고 관리 시스템</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body { padding-bottom: 70px; }
+        .tab-btn.active { color: #2563eb; font-weight: bold; border-top: 2px solid #2563eb; }
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
 
-    <!-- 상단 바 -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <h1 class="text-xl font-bold text-gray-900">출고관리 I</h1>
-                <span id="current-date" class="text-gray-400 text-sm font-mono"></span>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="location.reload()" class="px-3 py-1.5 border border-gray-300 rounded text-xs font-medium bg-white hover:bg-gray-50 cursor-pointer">새로고침</button>
-                <div class="text-[11px] text-gray-400 flex items-center gap-1">
-                    <span id="sync-status" class="w-2 h-2 rounded-full bg-gray-400"></span>
-                    <span id="sync-text">로컬 저장 모드</span>
-                </div>
-            </div>
+    <!-- 상단 헤더 -->
+    <header class="bg-slate-800 text-white p-4 sticky top-0 z-40 shadow-md flex justify-between items-center">
+        <h1 id="page-title" class="text-lg font-bold">📦 통합 재고관리</h1>
+        <div class="flex items-center gap-1.5 text-xs text-slate-400">
+            <span id="sync-status" class="w-2 h-2 rounded-full bg-gray-400"></span>
+            <span id="sync-text">로컬 저장 모드</span>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- 메인 컨텐츠 컨테이너 (PC에서는 넓게, 모바일에서는 폰 직관성 보장) -->
+    <main class="max-w-4xl mx-auto p-4 mt-2">
 
-        <!-- 입력 섹션 (상단 배치) -->
-        <section class="bg-white p-5 rounded-lg border border-gray-200 shadow-xs">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-sm font-bold text-gray-500">📋 출고 자재 정보 입력 (빈칸 허용)</h2>
-                <button id="btn-submit" class="px-5 py-2 bg-[#d97706] hover:bg-[#b45309] text-white text-sm font-bold rounded shadow-sm transition cursor-pointer">출고 저장</button>
+        <!-- ================= [1. 홈: 제품 등록] ================= -->
+        <div id="view-home" class="tab-view space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+                <h2 class="text-sm font-bold text-gray-600 mb-3 flex items-center gap-1"><span class="material-icons text-base">add_box</span> 신규 제품 등록</h2>
+                <div class="space-y-3">
+                    <input type="text" id="reg-name" placeholder="제품명 입력 (필수)" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
+                    <input type="text" id="reg-spec" placeholder="상세사양 입력" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
+                    <button id="btn-reg-submit" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 rounded-lg text-sm transition cursor-pointer">제품 등록하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= [2. 입고 관리] ================= -->
+        <div id="view-in" class="tab-view hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+                <h2 class="text-sm font-bold text-emerald-700 mb-3 flex items-center gap-1"><span class="material-icons text-base">file_download</span> 자재 입고 처리</h2>
+                <div class="space-y-3">
+                    <select id="in-name-select" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500"></select>
+                    <input type="text" id="in-spec" placeholder="상세사양 입력 (비워두기 가능)" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
+                    <input type="number" id="in-qty" placeholder="입고갯수" value="1" min="1" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
+                    <button id="btn-in-submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-sm transition cursor-pointer">입고 저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= [3. 출고 관리] ================= -->
+        <div id="view-out" class="tab-view hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
+                <h2 class="text-sm font-bold text-amber-700 mb-3 flex items-center gap-1"><span class="material-icons text-base">file_upload</span> 자재 출고 처리</h2>
+                <div class="space-y-3">
+                    <select id="out-model-select" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500"></select>
+                    <input type="text" id="out-spec" placeholder="상세사양 입력 (비워두기 가능)" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
+                    <input type="number" id="out-qty" placeholder="출고갯수" value="1" min="1" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
+                    <button id="btn-out-submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg text-sm transition cursor-pointer">출고 저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= [4. 재고 현황 (터치 시 로그 오픈)] ================= -->
+        <div id="view-status" class="tab-view hidden space-y-3">
+            <div class="p-2.5 bg-white rounded-lg border border-gray-300 flex items-center px-3">
+                <span class="material-icons text-gray-400 text-lg mr-2">search</span>
+                <input type="text" id="search-bar" placeholder="제품명 검색..." class="w-full bg-transparent text-sm focus:outline-none">
             </div>
             
-            <!-- PC 3열 / 모바일 1열 반응형 레이아웃 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">자재명</label>
-                    <input type="text" id="in-name" placeholder="예: 자동밸브" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-amber-600 bg-gray-50">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">모델명</label>
-                    <input type="text" id="in-model" placeholder="예: ITQ 0100-125BF" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-amber-600 bg-gray-50">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">상세사양 / RACK</label>
-                    <input type="text" id="in-spec" placeholder="예: (SUS/PTFE) AC 220V / 기타" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-amber-600 bg-gray-50">
-                </div>
+            <div id="status-container" class="space-y-2">
+                <!-- 여기에 제품 목록이 쌓이고 터치 시 서브 내역이 열림 -->
             </div>
-        </section>
-
-        <!-- 리스트 세션 (PC 테이블 형태 / 모바일 카드 형태 자동 변환) -->
-        <section class="bg-white rounded-lg border border-gray-200 shadow-xs overflow-hidden">
-            <div class="p-4 bg-gray-50 border-b border-gray-200">
-                <h3 class="text-sm font-bold text-gray-700">출고 완료 이력</h3>
-            </div>
-
-            <!-- PC용 테이블 뷰 (화면이 넓을 때만 보임) -->
-            <div class="hidden md:block overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-700 text-white text-xs font-semibold">
-                            <th class="p-3 w-12 text-center">#</th>
-                            <th class="p-3">자재명</th>
-                            <th class="p-3">모델명</th>
-                            <th class="p-3">상세사양 / RACK</th>
-                            <th class="p-3 w-48">출고일시</th>
-                            <th class="p-3 w-12 text-center">삭제</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pc-table-body" class="divide-y divide-gray-200 text-sm">
-                        <!-- 데이터가 여기에 쌓임 -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- 모바일용 리스트 뷰 (화면이 작을 때 보임) -->
-            <div id="mobile-list-body" class="block md:hidden divide-y divide-gray-200">
-                <!-- 모바일 전용 카드 레이아웃 쌓임 -->
-            </div>
-        </section>
+        </div>
 
     </main>
 
-    <!-- Firebase 및 데이터 처리 스크립트 -->
+    <!-- 하단 고정 네비게이션 메뉴 바 -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div class="max-w-md mx-auto flex justify-around text-center">
+            <button onclick="switchTab('home')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-home">
+                <span class="material-icons">home</span>홈
+            </button>
+            <button onclick="switchTab('in')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-in">
+                <span class="material-icons">file_download</span>입고
+            </button>
+            <button onclick="switchTab('out')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-out">
+                <span class="material-icons">file_upload</span>출고
+            </button>
+            <button onclick="switchTab('status')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-status">
+                <span class="material-icons">inventory_2</span>재고현황
+            </button>
+        </div>
+    </nav>
+
+    <!-- 실시간 구동 및 로컬 스토리지 데이터 코어 시스템 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 날짜 표시
-        document.getElementById('current-date').innerText = new Date().toISOString().split('T')[0];
+        // 데이터 상태 저장소 (나갔다 들어와도 유지되도록 로컬 연동)
+        let products = JSON.parse(localStorage.getItem('st_products')) || [];
+        let historyLogs = JSON.parse(localStorage.getItem('st_history')) || [];
 
-        // --- 데이터 배열 (로컬 저장소 백업용) ---
-        let baseData = JSON.parse(localStorage.getItem('out_history')) || [];
-
-               // ⚠️ 상윤님의 Firebase 프로젝트 설정 값으로 교체하세요!
-        const firebaseConfig = {
+        // ⚠️ Firebase 연동 데이터 주소 입력 칸 (공백일 경우 순수 자동 로컬 저장 유지)
+       const firebaseConfig = {
             apiKey: "jsy000818",
             authDomain: "jsy000818",
             projectId: "jsy000818",
@@ -110,143 +118,234 @@
         let db = null;
         let isFirebaseActive = false;
 
-        // Firebase 연결 시도
         if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 isFirebaseActive = true;
-                
-                // 클라우드 실시간 감지 구독
-                const q = query(collection(db, "out_logs"), orderBy("timestamp", "desc"));
-                onSnapshot(q, (snapshot) => {
-                    baseData = [];
-                    snapshot.forEach(docSnap => {
-                        baseData.push({ id: docSnap.id, ...docSnap.data() });
-                    });
-                    localStorage.setItem('out_history', JSON.stringify(baseData));
+
+                // 실시간 파이어베이스 리스너 연동 (제품 마스터)
+                onSnapshot(collection(db, "products"), (snap) => {
+                    products = [];
+                    snap.forEach(d => products.push({ id: d.id, ...d.data() }));
+                    localStorage.setItem('st_products', JSON.stringify(products));
+                    updateSelectBoxes();
+                    renderStatus();
+                });
+
+                // 실시간 파이어베이스 리스너 연동 (입출고 기록)
+                const qHistory = query(collection(db, "history"), orderBy("timestamp", "desc"));
+                onSnapshot(qHistory, (snap) => {
+                    historyLogs = [];
+                    snap.forEach(d => historyLogs.push({ id: d.id, ...d.data() }));
+                    localStorage.setItem('st_history', JSON.stringify(historyLogs));
                     document.getElementById('sync-status').className = "w-2 h-2 rounded-full bg-emerald-500";
                     document.getElementById('sync-text').innerText = "실시간 클라우드 모드";
-                    renderData();
+                    renderStatus();
                 });
-            } catch (e) {
-                console.log("Firebase 로드 실패, 로컬 모드로 전환합니다.");
-            }
+            } catch(e) { console.log("로컬 단독 모드로 구동됩니다."); }
         }
 
         if(!isFirebaseActive) {
-            // 로컬 모드일 때 첫 화면 띄우기
-            renderData();
+            updateSelectBoxes();
+            renderStatus();
         }
 
-        // --- 데이터 화면에 그리기 (PC / 모바일 분기 수용) ---
-        function renderData() {
-            const pcBody = document.getElementById('pc-table-body');
-            const mobileBody = document.getElementById('mobile-list-body');
+        // 선택 상자(인풋 선택 도구) 갱신
+        function updateSelectBoxes() {
+            const inSelect = document.getElementById('in-name-select');
+            const outSelect = document.getElementById('out-model-select');
             
-            pcBody.innerHTML = '';
-            mobileBody.innerHTML = '';
+            inSelect.innerHTML = '<option value="">▼ 입고할 제품 선택</option>';
+            outSelect.innerHTML = '<option value="">▼ 출고할 모델(제품) 선택</option>';
 
-            if (baseData.length === 0) {
-                const emptyRow = `<tr><td colspan="6" class="text-center py-12 text-gray-400">출고된 내역이 없습니다. 항목을 적고 출고 저장을 해보세요.</td></tr>`;
-                pcBody.innerHTML = emptyRow;
-                mobileBody.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm">출고된 내역이 없습니다.</div>`;
-                return;
-            }
-
-            baseData.forEach((item, index) => {
-                const no = baseData.length - index;
-                
-                // 1. PC 테이블 행 생성
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 text-gray-700";
-                tr.innerHTML = `
-                    <td class="p-3 text-center text-gray-400 font-mono text-xs">${no}</td>
-                    <td class="p-3 font-medium text-gray-900">${item.name || '-'}</td>
-                    <td class="p-3 font-mono text-xs">${item.model || '-'}</td>
-                    <td class="p-3 text-gray-500">${item.spec || '-'}</td>
-                    <td class="p-3 font-mono text-xs text-gray-400">${item.date}</td>
-                    <td class="p-3 text-center">
-                        <button onclick="window.deleteItem('${item.id}', ${index})" class="text-gray-400 hover:text-red-500 cursor-pointer">
-                            <span class="material-icons text-sm">delete</span>
-                        </button>
-                    </td>
-                `;
-                pcBody.appendChild(tr);
-
-                // 2. 모바일 카드 리스트 생성
-                const card = document.createElement('div');
-                card.className = "p-4 space-y-2 bg-white";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">No.${no}</span>
-                        <span class="text-[11px] font-mono text-gray-400">${item.date}</span>
-                    </div>
-                    <div class="text-sm font-bold text-gray-900">자재명: ${item.name || '-'}</div>
-                    <div class="text-xs text-gray-600">모델: ${item.model || '-'}</div>
-                    <div class="text-xs text-gray-500">사양/RACK: ${item.spec || '-'}</div>
-                    <div class="text-right pt-1">
-                        <button onclick="window.deleteItem('${item.id}', ${index})" class="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer">내역 삭제</button>
-                    </div>
-                `;
-                mobileBody.appendChild(card);
+            products.forEach(p => {
+                inSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                outSelect.innerHTML += `<option value="${p.id}">${p.name} (${p.spec})</option>`;
             });
         }
 
-        // --- 출고 저장 버튼 클릭 이벤트 ---
-        document.getElementById('btn-submit').addEventListener('click', async () => {
-            const name = document.getElementById('in-name').value.trim();
-            const model = document.getElementById('in-model').value.trim();
-            const spec = document.getElementById('in-spec').value.trim();
-
-            // 날짜 시간 포맷팅 (YYYY-MM-DD HH:MM:SS)
+        // 날짜 포맷 함수 (YYYY-MM-DD HH:MM:SS)
+        function getNowString() {
             const now = new Date();
-            const dateStr = now.getFullYear() + '-' + 
-                String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(now.getDate()).padStart(2, '0') + ' ' + 
-                String(now.getHours()).padStart(2, '0') + ':' + 
-                String(now.getMinutes()).padStart(2, '0') + ':' + 
-                String(now.getSeconds()).padStart(2, '0');
+            return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+        }
 
-            const uniqueId = 'id_' + Date.now();
-            const newLog = {
-                id: uniqueId,
-                name: name,
-                model: model,
-                spec: spec,
-                date: dateStr,
-                timestamp: new Date()
-            };
+        // [1] 홈 화면에서 신규 제품 등록 이벤트
+        document.getElementById('btn-reg-submit').addEventListener('click', async () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const spec = document.getElementById('reg-spec').value.trim() || '-';
 
-            if (isFirebaseActive) {
-                // 클라우드 저장
-                await setDoc(doc(db, "out_logs", uniqueId), newLog);
+            if(!name) return alert('제품명은 반드시 입력해야 합니다.');
+
+            const pId = 'p_' + Date.now();
+            const newProduct = { id: pId, name: name, spec: spec, currentQty: 0 };
+
+            if(isFirebaseActive) {
+                await setDoc(doc(db, "products", pId), newProduct);
             } else {
-                // 로컬 브라우저에 저장
-                baseData.unshift(newLog);
-                localStorage.setItem('out_history', JSON.stringify(baseData));
-                renderData();
+                products.push(newProduct);
+                localStorage.setItem('st_products', JSON.stringify(products));
+                updateSelectBoxes();
+                renderStatus();
             }
 
-            // 입력 칸 초기화
-            document.getElementById('in-name').value = '';
-            document.getElementById('in-model').value = '';
-            document.getElementById('in-spec').value = '';
+            document.getElementById('reg-name').value = '';
+            document.getElementById('reg-spec').value = '';
+            alert('새 제품이 등록되었습니다.');
         });
 
-        // --- 삭제 기능 처리 (전역 윈도우 함수 등록) ---
-        window.deleteItem = async function(id, localIndex) {
-            if (!confirm("이 출고 기록을 삭제하시겠습니까?")) return;
+        // [2] 입고 완료 저장 버튼
+        document.getElementById('btn-in-submit').addEventListener('click', async () => {
+            const pId = document.getElementById('in-name-select').value;
+            const spec = document.getElementById('in-spec').value.trim() || '-';
+            const qty = parseInt(document.getElementById('in-qty').value) || 0;
 
-            if (isFirebaseActive) {
-                await deleteDoc(doc(db, "out_logs", id));
+            if(!pId || qty <= 0) return alert('제품을 선택하고 올바른 수량을 입력하세요.');
+
+            const logId = 'log_' + Date.now();
+            const logData = { id: logId, productId: pId, type: '입고', spec: spec, qty: qty, date: getNowString(), timestamp: new Date() };
+
+            if(isFirebaseActive) {
+                const target = products.find(p => p.id === pId);
+                await setDoc(doc(db, "products", pId), { ...target, currentQty: target.currentQty + qty });
+                await setDoc(doc(db, "history", logId), logData);
             } else {
-                baseData.splice(localIndex, 1);
-                localStorage.setItem('out_history', JSON.stringify(baseData));
-                renderData();
+                const pIdx = products.findIndex(p => p.id === pId);
+                products[pIdx].currentQty += qty;
+                historyLogs.unshift(logData);
+
+                localStorage.setItem('st_products', JSON.stringify(products));
+                localStorage.setItem('st_history', JSON.stringify(historyLogs));
+                renderStatus();
+            }
+
+            document.getElementById('in-spec').value = '';
+            document.getElementById('in-qty').value = '1';
+            alert('입고 데이터가 저장되었습니다.');
+        });
+
+        // [3] 출고 완료 저장 버튼
+        document.getElementById('btn-out-submit').addEventListener('click', async () => {
+            const pId = document.getElementById('out-model-select').value;
+            const spec = document.getElementById('out-spec').value.trim() || '-';
+            const qty = parseInt(document.getElementById('out-qty').value) || 0;
+
+            if(!pId || qty <= 0) return alert('제품(모델)을 선택하고 올바른 수량을 입력하세요.');
+
+            const logId = 'log_' + Date.now();
+            const logData = { id: logId, productId: pId, type: '출고', spec: spec, qty: qty, date: getNowString(), timestamp: new Date() };
+
+            if(isFirebaseActive) {
+                const target = products.find(p => p.id === pId);
+                await setDoc(doc(db, "products", pId), { ...target, currentQty: target.currentQty - qty });
+                await setDoc(doc(db, "history", logId), logData);
+            } else {
+                const pIdx = products.findIndex(p => p.id === pId);
+                products[pIdx].currentQty -= qty;
+                historyLogs.unshift(logData);
+
+                localStorage.setItem('st_products', JSON.stringify(products));
+                localStorage.setItem('st_history', JSON.stringify(historyLogs));
+                renderStatus();
+            }
+
+            document.getElementById('out-spec').value = '';
+            document.getElementById('out-qty').value = '1';
+            alert('출고 데이터가 저장되었습니다.');
+        });
+
+        // [4] 재고 현황 렌더링 (리스트 클릭 시 펼침 제어)
+        function renderStatus() {
+            const container = document.getElementById('status-container');
+            const keyword = document.getElementById('search-bar').value.toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = products.filter(p => p.name.toLowerCase().includes(keyword));
+
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">등록된 제품이 없습니다.</div>`;
+                return;
+            }
+
+            filtered.forEach(p => {
+                // 해당 제품에 쌓인 히스토리 필터링 추출
+                const matchingLogs = historyLogs.filter(l => l.productId === p.id);
+
+                let logHtml = '';
+                if(matchingLogs.length === 0) {
+                    logHtml = `<div class="p-2 text-xs text-gray-400 text-center">입출고 이력이 존재하지 않습니다.</div>`;
+                } else {
+                    matchingLogs.forEach(l => {
+                        const typeColor = l.type === '입고' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
+                        logHtml += `
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-none text-xs">
+                                <div>
+                                    <span class="px-1.5 py-0.5 rounded font-bold text-[10px] mr-1.5 ${typeColor}">${l.type}</span>
+                                    <span class="text-gray-500 font-mono">${l.date}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-semibold text-gray-700">${l.qty}개</span>
+                                    <span class="text-[11px] text-gray-400 block">사양: ${l.spec}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // 동적 제품 카드 패널 UI 컴포넌트 추가
+                const pCard = document.createElement('div');
+                pCard.className = "bg-white rounded-xl border border-gray-200 shadow-2xs overflow-hidden";
+                pCard.innerHTML = `
+                    <!-- 터치하는 타이틀 바 영역 -->
+                    <div onclick="window.toggleAccordion('${p.id}')" class="p-4 flex justify-between items-center bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer select-none">
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900">${p.name}</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">기본사양: ${p.spec}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-black text-blue-600">${p.currentQty} 개</span>
+                            <span class="material-icons text-gray-400 text-sm" id="icon-${p.id}">expand_more</span>
+                        </div>
+                    </div>
+                    <!-- 클릭 시 열리는 입출고 내역 세부사항 서브 패널 -->
+                    <div id="logPanel-${p.id}" class="hidden bg-gray-50 border-t border-gray-100 p-4 space-y-1">
+                        <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">📜 개별 변동 히스토리</div>
+                        ${logHtml}
+                    </div>
+                `;
+                container.appendChild(pCard);
+            });
+        }
+
+        // 서브 아코디언 토글 전역 윈도우 스크립트 연결
+        window.toggleAccordion = function(id) {
+            const panel = document.getElementById(`logPanel-${id}`);
+            const icon = document.getElementById(`icon-${id}`);
+            if(panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                icon.innerText = 'expand_less';
+            } else {
+                panel.classList.add('hidden');
+                icon.innerText = 'expand_more';
             }
         };
 
+        document.getElementById('search-bar').addEventListener('input', renderStatus);
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+            document.getElementById('nav-' + tabId).classList.add('active');
+            
+            const titles = { home: '🏠 홈: 제품 등록', in: '📥 입고 관리', out: '📤 출고 관리', status: '📋 현재고 현황' };
+            document.getElementById('page-title').innerText = titles[tabId];
+            if(tabId === 'in' || tabId === 'out') updateSelectBoxes();
+        };
+
+        // 최초 로딩 초기 탭 지정
+        window.switchTab('home');
     </script>
 </body>
 </html>
