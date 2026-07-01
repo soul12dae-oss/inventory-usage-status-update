@@ -23,10 +23,10 @@
         </div>
     </header>
 
-    <!-- 메인 컨텐츠 컨테이너 (PC에서는 넓게, 모바일에서는 폰 직관성 보장) -->
+    <!-- 메인 컨텐츠 -->
     <main class="max-w-4xl mx-auto p-4 mt-2">
 
-        <!-- ================= [1. 홈: 제품 등록] ================= -->
+        <!-- [1. 홈: 제품 등록] -->
         <div id="view-home" class="tab-view space-y-4">
             <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
                 <h2 class="text-sm font-bold text-gray-600 mb-3 flex items-center gap-1"><span class="material-icons text-base">add_box</span> 신규 제품 등록</h2>
@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <!-- ================= [2. 입고 관리] ================= -->
+        <!-- [2. 입고 관리] -->
         <div id="view-in" class="tab-view hidden space-y-4">
             <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
                 <h2 class="text-sm font-bold text-emerald-700 mb-3 flex items-center gap-1"><span class="material-icons text-base">file_download</span> 자재 입고 처리</h2>
@@ -51,7 +51,7 @@
             </div>
         </div>
 
-        <!-- ================= [3. 출고 관리] ================= -->
+        <!-- [3. 출고 관리] -->
         <div id="view-out" class="tab-view hidden space-y-4">
             <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
                 <h2 class="text-sm font-bold text-amber-700 mb-3 flex items-center gap-1"><span class="material-icons text-base">file_upload</span> 자재 출고 처리</h2>
@@ -64,7 +64,7 @@
             </div>
         </div>
 
-        <!-- ================= [4. 재고 현황 (터치 시 로그 오픈)] ================= -->
+        <!-- [4. 재고 현황 (터치 시 로그 오픈)] -->
         <div id="view-status" class="tab-view hidden space-y-3">
             <div class="p-2.5 bg-white rounded-lg border border-gray-300 flex items-center px-3">
                 <span class="material-icons text-gray-400 text-lg mr-2">search</span>
@@ -72,13 +72,13 @@
             </div>
             
             <div id="status-container" class="space-y-2">
-                <!-- 여기에 제품 목록이 쌓이고 터치 시 서브 내역이 열림 -->
+                <!-- 아코디언 카드 리스트 배치 영역 -->
             </div>
         </div>
 
     </main>
 
-    <!-- 하단 고정 네비게이션 메뉴 바 -->
+    <!-- 하단 고정 내비게이션 -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div class="max-w-md mx-auto flex justify-around text-center">
             <button onclick="switchTab('home')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-home">
@@ -96,17 +96,17 @@
         </div>
     </nav>
 
-    <!-- 실시간 구동 및 로컬 스토리지 데이터 코어 시스템 -->
+    <!-- 데이터 처리 핵심 스크립트 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 데이터 상태 저장소 (나갔다 들어와도 유지되도록 로컬 연동)
+        // 로컬 브라우저 백업 복구 구조화
         let products = JSON.parse(localStorage.getItem('st_products')) || [];
         let historyLogs = JSON.parse(localStorage.getItem('st_history')) || [];
 
-        // ⚠️ Firebase 연동 데이터 주소 입력 칸 (공백일 경우 순수 자동 로컬 저장 유지)
-       const firebaseConfig = {
+        // ⚠️ Firebase 설정을 사용하실 때 값을 채워주세요.
+            const firebaseConfig = {
             apiKey: "jsy000818",
             authDomain: "jsy000818",
             projectId: "jsy000818",
@@ -124,7 +124,6 @@
                 db = getFirestore(app);
                 isFirebaseActive = true;
 
-                // 실시간 파이어베이스 리스너 연동 (제품 마스터)
                 onSnapshot(collection(db, "products"), (snap) => {
                     products = [];
                     snap.forEach(d => products.push({ id: d.id, ...d.data() }));
@@ -133,7 +132,6 @@
                     renderStatus();
                 });
 
-                // 실시간 파이어베이스 리스너 연동 (입출고 기록)
                 const qHistory = query(collection(db, "history"), orderBy("timestamp", "desc"));
                 onSnapshot(qHistory, (snap) => {
                     historyLogs = [];
@@ -143,7 +141,7 @@
                     document.getElementById('sync-text').innerText = "실시간 클라우드 모드";
                     renderStatus();
                 });
-            } catch(e) { console.log("로컬 단독 모드로 구동됩니다."); }
+            } catch(e) { console.log("로컬 단독 모드로 전환됩니다."); }
         }
 
         if(!isFirebaseActive) {
@@ -151,7 +149,7 @@
             renderStatus();
         }
 
-        // 선택 상자(인풋 선택 도구) 갱신
+        // 인풋 바인딩 드롭다운 박스 채우기
         function updateSelectBoxes() {
             const inSelect = document.getElementById('in-name-select');
             const outSelect = document.getElementById('out-model-select');
@@ -165,18 +163,24 @@
             });
         }
 
-        // 날짜 포맷 함수 (YYYY-MM-DD HH:MM:SS)
+        // 한국 시간 기준 YYYY-MM-DD HH:MM:SS 스트링 반환 함수
         function getNowString() {
             const now = new Date();
-            return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         }
 
-        // [1] 홈 화면에서 신규 제품 등록 이벤트
+        // [1] 홈 화면: 신규 제품 등록
         document.getElementById('btn-reg-submit').addEventListener('click', async () => {
             const name = document.getElementById('reg-name').value.trim();
             const spec = document.getElementById('reg-spec').value.trim() || '-';
 
-            if(!name) return alert('제품명은 반드시 입력해야 합니다.');
+            if(!name) return alert('제품명은 필수 항목입니다.');
 
             const pId = 'p_' + Date.now();
             const newProduct = { id: pId, name: name, spec: spec, currentQty: 0 };
@@ -195,16 +199,17 @@
             alert('새 제품이 등록되었습니다.');
         });
 
-        // [2] 입고 완료 저장 버튼
+        // [2] 입고 완료 저장
         document.getElementById('btn-in-submit').addEventListener('click', async () => {
             const pId = document.getElementById('in-name-select').value;
             const spec = document.getElementById('in-spec').value.trim() || '-';
             const qty = parseInt(document.getElementById('in-qty').value) || 0;
 
-            if(!pId || qty <= 0) return alert('제품을 선택하고 올바른 수량을 입력하세요.');
+            if(!pId || qty <= 0) return alert('제품을 선택하고 수량을 입력하세요.');
 
             const logId = 'log_' + Date.now();
-            const logData = { id: logId, productId: pId, type: '입고', spec: spec, qty: qty, date: getNowString(), timestamp: new Date() };
+            const timeString = getNowString();
+            const logData = { id: logId, productId: pId, type: '입고', spec: spec, qty: qty, date: timeString, timestamp: new Date() };
 
             if(isFirebaseActive) {
                 const target = products.find(p => p.id === pId);
@@ -213,7 +218,7 @@
             } else {
                 const pIdx = products.findIndex(p => p.id === pId);
                 products[pIdx].currentQty += qty;
-                historyLogs.unshift(logData);
+                historyLogs.unshift(logData); // 최근 내역이 위로 오도록 배열 맨 앞에 배치
 
                 localStorage.setItem('st_products', JSON.stringify(products));
                 localStorage.setItem('st_history', JSON.stringify(historyLogs));
@@ -222,19 +227,20 @@
 
             document.getElementById('in-spec').value = '';
             document.getElementById('in-qty').value = '1';
-            alert('입고 데이터가 저장되었습니다.');
+            alert('입고 처리가 완료되었습니다.');
         });
 
-        // [3] 출고 완료 저장 버튼
+        // [3] 출고 완료 저장
         document.getElementById('btn-out-submit').addEventListener('click', async () => {
             const pId = document.getElementById('out-model-select').value;
             const spec = document.getElementById('out-spec').value.trim() || '-';
             const qty = parseInt(document.getElementById('out-qty').value) || 0;
 
-            if(!pId || qty <= 0) return alert('제품(모델)을 선택하고 올바른 수량을 입력하세요.');
+            if(!pId || qty <= 0) return alert('출고할 대상을 선택하고 수량을 입력하세요.');
 
             const logId = 'log_' + Date.now();
-            const logData = { id: logId, productId: pId, type: '출고', spec: spec, qty: qty, date: getNowString(), timestamp: new Date() };
+            const timeString = getNowString();
+            const logData = { id: logId, productId: pId, type: '출고', spec: spec, qty: qty, date: timeString, timestamp: new Date() };
 
             if(isFirebaseActive) {
                 const target = products.find(p => p.id === pId);
@@ -252,10 +258,10 @@
 
             document.getElementById('out-spec').value = '';
             document.getElementById('out-qty').value = '1';
-            alert('출고 데이터가 저장되었습니다.');
+            alert('출고 처리가 완료되었습니다.');
         });
 
-        // [4] 재고 현황 렌더링 (리스트 클릭 시 펼침 제어)
+        // [4] 재고 현황 화면 및 아코디언 리스트 생성 
         function renderStatus() {
             const container = document.getElementById('status-container');
             const keyword = document.getElementById('search-bar').value.toLowerCase();
@@ -264,40 +270,39 @@
             const filtered = products.filter(p => p.name.toLowerCase().includes(keyword));
 
             if(filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">등록된 제품이 없습니다.</div>`;
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">등록되거나 검색된 제품이 없습니다.</div>`;
                 return;
             }
 
             filtered.forEach(p => {
-                // 해당 제품에 쌓인 히스토리 필터링 추출
+                // 이 제품의 id값과 일치하는 내역들을 선별하여 가져옵니다.
                 const matchingLogs = historyLogs.filter(l => l.productId === p.id);
 
                 let logHtml = '';
                 if(matchingLogs.length === 0) {
-                    logHtml = `<div class="p-2 text-xs text-gray-400 text-center">입출고 이력이 존재하지 않습니다.</div>`;
+                    logHtml = `<div class="p-2 text-xs text-gray-400 text-center">입출고 이력이 없습니다.</div>`;
                 } else {
                     matchingLogs.forEach(l => {
-                        const typeColor = l.type === '입고' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
+                        const typeClass = l.type === '입고' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
                         logHtml += `
-                            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-none text-xs">
+                            <div class="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-none text-xs">
                                 <div>
-                                    <span class="px-1.5 py-0.5 rounded font-bold text-[10px] mr-1.5 ${typeColor}">${l.type}</span>
-                                    <span class="text-gray-500 font-mono">${l.date}</span>
+                                    <span class="px-1.5 py-0.5 rounded font-black text-[10px] mr-2 ${typeClass}">${l.type}</span>
+                                    <span class="text-gray-600 font-mono font-medium">${l.date}</span>
                                 </div>
                                 <div class="text-right">
-                                    <span class="font-semibold text-gray-700">${l.qty}개</span>
-                                    <span class="text-[11px] text-gray-400 block">사양: ${l.spec}</span>
+                                    <span class="font-bold text-gray-900">${l.qty} 개</span>
+                                    <span class="text-[10px] text-gray-400 block mt-0.5">상세: ${l.spec}</span>
                                 </div>
                             </div>
                         `;
                     });
                 }
 
-                // 동적 제품 카드 패널 UI 컴포넌트 추가
                 const pCard = document.createElement('div');
                 pCard.className = "bg-white rounded-xl border border-gray-200 shadow-2xs overflow-hidden";
                 pCard.innerHTML = `
-                    <!-- 터치하는 타이틀 바 영역 -->
+                    <!-- 아코디언 타이틀 헤더 바 -->
                     <div onclick="window.toggleAccordion('${p.id}')" class="p-4 flex justify-between items-center bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer select-none">
                         <div>
                             <h3 class="text-sm font-bold text-gray-900">${p.name}</h3>
@@ -308,9 +313,9 @@
                             <span class="material-icons text-gray-400 text-sm" id="icon-${p.id}">expand_more</span>
                         </div>
                     </div>
-                    <!-- 클릭 시 열리는 입출고 내역 세부사항 서브 패널 -->
-                    <div id="logPanel-${p.id}" class="hidden bg-gray-50 border-t border-gray-100 p-4 space-y-1">
-                        <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">📜 개별 변동 히스토리</div>
+                    <!-- 자재 터치 시 드롭다운되는 상세 이력 로그 패널 -->
+                    <div id="logPanel-${p.id}" class="hidden bg-gray-50 border-t border-gray-200 p-4 space-y-1">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">📜 변동 히스토리 내역</div>
                         ${logHtml}
                     </div>
                 `;
@@ -318,7 +323,7 @@
             });
         }
 
-        // 서브 아코디언 토글 전역 윈도우 스크립트 연결
+        // 아코디언 확장 함수
         window.toggleAccordion = function(id) {
             const panel = document.getElementById(`logPanel-${id}`);
             const icon = document.getElementById(`icon-${id}`);
@@ -331,7 +336,10 @@
             }
         };
 
+        // 실시간 인풋 검색 필터링
         document.getElementById('search-bar').addEventListener('input', renderStatus);
+
+        // 하단 탭 네비게이션 제어 스크립트
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -344,7 +352,7 @@
             if(tabId === 'in' || tabId === 'out') updateSelectBoxes();
         };
 
-        // 최초 로딩 초기 탭 지정
+        // 초기 시작 페이지 로드
         window.switchTab('home');
     </script>
 </body>
