@@ -3,325 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통합 재고 관리 시스템</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>자재 입출고 관리 시스템</title>
+    <!-- Supabase CDN 라이브러리 로드 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { padding-bottom: 70px; }
-        .tab-btn.active { color: #2563eb; font-weight: bold; border-top: 2px solid #2563eb; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background: #f8f9fa; color: #333; }
+        .nav { display: flex; justify-content: space-around; background: #212529; padding: 12px; margin-bottom: 20px; border-radius: 8px; }
+        .nav button { color: #cfd4da; background: none; border: none; font-size: 15px; font-weight: bold; cursor: pointer; padding: 8px; }
+        .nav button.active-btn { color: #fff; border-bottom: 2px solid #fff; }
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); max-width: 600px; margin: 0 auto; }
+        .active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 6px; font-size: 15px; }
+        .form-group textarea { height: 80px; resize: none; }
+        button.btn { width: 100%; padding: 14px; background: #0d6efd; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button.btn-danger { background: #dc3545; }
+        
+        /* 현황판 스타일 */
+        .status-container { max-width: 800px; }
+        .log-item { background: white; padding: 15px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
+        .log-item.in { border-left-color: #0d6efd; }
+        .log-item.out { border-left-color: #dc3545; }
+        .log-header { display: flex; justify-content: space-between; font-size: 13px; color: #6c757d; margin-bottom: 6px; }
+        .log-body { font-size: 16px; font-weight: bold; }
+        .log-note { font-size: 14px; color: #495057; margin-top: 6px; background: #f8f9fa; padding: 6px; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen">
+<body>
 
-    <!-- 상단 헤더 -->
-    <header class="bg-slate-800 text-white p-4 sticky top-0 z-40 shadow-md flex justify-between items-center">
-        <h1 id="page-title" class="text-lg font-bold">📦 통합 재고관리</h1>
-        <div class="text-xs text-emerald-400 flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>시스템 정상 구동 중 (자동 저장)</span>
+    <div class="nav">
+        <button id="btn-main" class="active-btn" onclick="openTab('main')">메인(등록)</button>
+        <button id="btn-inflow" onclick="openTab('inflow')">입고</button>
+        <button id="btn-outflow" onclick="openTab('outflow')">출고</button>
+        <button id="btn-status" onclick="openTab('status')">전체현황</button>
+    </div>
+
+    <!-- 1. 메인 화면 (물품 등록) -->
+    <div id="main" class="tab-content active">
+        <h2>물품 등록</h2>
+        <div class="form-group">
+            <label>물품명</label>
+            <input type="text" id="itemName" placeholder="예: A형 볼트">
         </div>
-    </header>
-
-    <!-- 메인 컨텐츠 -->
-    <main class="max-w-4xl mx-auto p-4 mt-2">
-
-        <!-- ================= [1. 홈: 제품 등록] ================= -->
-        <div id="view-home" class="tab-view space-y-4">
-            <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
-                <h2 class="text-sm font-bold text-gray-600 mb-3 flex items-center gap-1"><span class="material-icons text-base">add_box</span> 신규 제품 마스터 등록</h2>
-                <div class="space-y-3">
-                    <input type="text" id="reg-name" placeholder="제품명 입력 (필수)" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
-                    <input type="text" id="reg-spec" placeholder="기본 상세사양 입력 (선택)" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-blue-500">
-                    <button id="btn-reg-submit" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 rounded-lg text-sm transition cursor-pointer">제품 등록하기</button>
-                </div>
-            </div>
+        <div class="form-group">
+            <label>기타 메모</label>
+            <input type="text" id="itemMemo" placeholder="규격, 제조사 등">
         </div>
+        <button class="btn" onclick="addItem()">물품 등록하기</button>
+    </div>
 
-        <!-- ================= [2. 입고 관리] ================= -->
-        <div id="view-in" class="tab-view hidden space-y-4">
-            <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
-                <h2 class="text-sm font-bold text-emerald-700 mb-3 flex items-center gap-1"><span class="material-icons text-base">file_download</span> 자재 입고 처리</h2>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">제품명</label>
-                        <input type="text" id="in-name" placeholder="제품명 입력" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">상세사양</label>
-                        <input type="text" id="in-spec" placeholder="상세사양 입력 (빈칸 가능)" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">입고갯수</label>
-                        <input type="number" id="in-qty" placeholder="입고갯수" value="1" min="1" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-emerald-500">
-                    </div>
-                    <button id="btn-in-submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition cursor-pointer shadow-md">📥 입고 데이터 저장</button>
-                </div>
-            </div>
+    <!-- 2. 입고 화면 -->
+    <div id="inflow" class="tab-content">
+        <h2>자재 입고</h2>
+        <div class="form-group">
+            <label>물품 선택</label>
+            <select id="inItemSelect"><option value="">로딩 중...</option></select>
         </div>
-
-        <!-- ================= [3. 출고 관리] ================= -->
-        <div id="view-out" class="tab-view hidden space-y-4">
-            <div class="bg-white p-5 rounded-xl shadow-xs border border-gray-200">
-                <h2 class="text-sm font-bold text-amber-700 mb-3 flex items-center gap-1"><span class="material-icons text-base">file_upload</span> 자재 출고 처리</h2>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">모델명</label>
-                        <input type="text" id="out-model" placeholder="모델명 입력" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-amber-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">상세사양</label>
-                        <input type="text" id="out-spec" placeholder="상세사양 입력 (빈칸 가능)" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-amber-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">출고갯수</label>
-                        <input type="number" id="out-qty" placeholder="출고갯수" value="1" min="1" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-amber-500">
-                    </div>
-                    <button id="btn-out-submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-lg text-sm transition cursor-pointer shadow-md">📤 출고 데이터 저장</button>
-                </div>
-            </div>
+        <div class="form-group">
+            <label>입고 수량</label>
+            <input type="number" id="inCount" min="1" placeholder="숫자만 입력">
         </div>
-
-        <!-- ================= [4. 재고 현황] ================= -->
-        <div id="view-status" class="tab-view hidden space-y-3">
-            <div class="p-2.5 bg-white rounded-lg border border-gray-300 flex items-center px-3">
-                <span class="material-icons text-gray-400 text-lg mr-2">search</span>
-                <input type="text" id="search-bar" placeholder="제품명 검색..." class="w-full bg-transparent text-sm focus:outline-none">
-            </div>
-            
-            <div id="status-container" class="space-y-2">
-                <!-- 항목 터치 시 변동 일시 로그가 아래로 펼쳐짐 -->
-            </div>
+        <div class="form-group">
+            <label>특이사항</label>
+            <textarea id="inNote" placeholder="특이사항 입력 (생략 가능)"></textarea>
         </div>
+        <button class="btn" onclick="logStock('입고')">입고 완료</button>
+    </div>
 
-    </main>
-
-    <!-- 하단 고정 네비게이션 바 -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-        <div class="max-w-md mx-auto flex justify-around text-center">
-            <button onclick="switchTab('home')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-home">
-                <span class="material-icons">home</span>홈
-            </button>
-            <button onclick="switchTab('in')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-in">
-                <span class="material-icons">file_download</span>입고
-            </button>
-            <button onclick="switchTab('out')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-out">
-                <span class="material-icons">file_upload</span>출고
-            </button>
-            <button onclick="switchTab('status')" class="tab-btn flex-1 py-2 text-gray-400 text-xs flex flex-col items-center" id="nav-status">
-                <span class="material-icons">inventory_2</span>재고현황
-            </button>
+    <!-- 3. 출고 화면 -->
+    <div id="outflow" class="tab-content">
+        <h2>자재 출고</h2>
+        <div class="form-group">
+            <label>물품 선택</label>
+            <select id="outItemSelect"><option value="">로딩 중...</option></select>
         </div>
-    </nav>
+        <div class="form-group">
+            <label>출고 수량</label>
+            <input type="number" id="outCount" min="1" placeholder="숫자만 입력">
+        </div>
+        <div class="form-group">
+            <label>특이사항</label>
+            <textarea id="outNote" placeholder="특이사항 입력 (생략 가능)"></textarea>
+        </div>
+        <button class="btn btn-danger" onclick="logStock('출고')">출고 완료</button>
+    </div>
+
+    <!-- 4. 전체 현황 화면 -->
+    <div id="status" class="tab-content status-container">
+        <h2>입출고 현황 리스트</h2>
+        <div id="logList">
+            <!-- 실시간 데이터가 모바일 보기 편한 카드 형태로 출력됩니다 -->
+        </div>
+    </div>
 
     <script>
-        // 데이터 저장소 강제 연동 (브라우저가 켜져있는 한 무조건 영구 보존)
-        let products = JSON.parse(localStorage.getItem('final_products')) || [];
-        let historyLogs = JSON.parse(localStorage.getItem('final_history')) || [];
+        // ⚠️ 본인의 Supabase 주소와 API Key로 반드시 변경하세요.
+        const SUPABASE_URL = "https://kvfdfdcaidsdnohfcbeg.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_AzZQ-7pqFS2klriLNXlCig_xRs8b1vV";
+        
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 실시간 한국 시간 가져오기 함수 (일시 자동 등록용)
-        function getNowDateTime() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        // 페이지 로드 시 물품 목록 가져오기
+        window.onload = function() {
+            loadItems();
+        };
+
+        // 탭 전환 및 스타일 변경
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active-btn'));
+            
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById(`btn-${tabId}`).classList.add('active-btn');
+            
+            if(tabId === 'status') loadLogs();
+            if(tabId === 'inflow' || tabId === 'outflow') loadItems();
         }
 
-        // 데이터 영구 저장 함수
-        function saveToStorage() {
-            localStorage.setItem('final_products', JSON.stringify(products));
-            localStorage.setItem('final_history', JSON.stringify(historyLogs));
-            renderStatus();
+        // DB에서 물품 목록 불러와 선택창에 반영
+        async function loadItems() {
+            const { data, error } = await supabase.from('items').select('name').order('name');
+            if (error) return console.error(error);
+
+            const inSelect = document.getElementById('inItemSelect');
+            const outSelect = document.getElementById('outItemSelect');
+            
+            let options = '<option value="">물품을 선택하세요</option>';
+            data.forEach(item => {
+                options += `<option value="${item.name}">${item.name}</option>`;
+            });
+            
+            inSelect.innerHTML = options;
+            outSelect.innerHTML = options;
         }
 
-        // [1] 홈 화면: 제품 등록하기
-        document.getElementById('btn-reg-submit').addEventListener('click', () => {
-            const name = document.getElementById('reg-name').value.trim();
-            const spec = document.getElementById('reg-spec').value.trim() || '-';
+        // 1. 물품 등록 기능
+        async function addItem() {
+            const name = document.getElementById('itemName').value.trim();
+            const memo = document.getElementById('itemMemo').value.trim();
+            
+            if(!name) return alert('물품명을 입력해주세요.');
 
-            if(!name) { alert('제품명은 꼭 입력해 주세요!'); return; }
-
-            // 기존에 같은 이름이 있는지 확인
-            let target = products.find(p => p.name === name);
-            if(!target) {
-                products.push({ name: name, spec: spec, currentQty: 0 });
-                alert(`${name} 제품이 새로 시스템에 등록되었습니다.`);
+            const { error } = await supabase.from('items').insert([{ name, memo }]);
+            
+            if (error) {
+                if(error.code === '23505') alert('이미 등록된 물품입니다.');
+                else alert('등록 실패: ' + error.message);
             } else {
-                alert('이미 등록되어 있는 제품명입니다.');
+                alert(`[${name}] 등록 완료!`);
+                document.getElementById('itemName').value = '';
+                document.getElementById('itemMemo').value = '';
+                loadItems();
             }
+        }
 
-            document.getElementById('reg-name').value = '';
-            document.getElementById('reg-spec').value = '';
-            saveToStorage();
-        });
+        // 2 & 3. 입고 및 출고 저장 (날짜/시간은 DB에서 한국시간 기준으로 자동 처리됨)
+        async function logStock(type) {
+            const prefix = type === '입고' ? 'in' : 'out';
+            const itemName = document.getElementById(`${prefix}ItemSelect`).value;
+            const count = parseInt(document.getElementById(`${prefix}Count`).value);
+            const note = document.getElementById(`${prefix}Note`).value.trim();
+            
+            if(!itemName) return alert('물품을 선택하세요.');
+            if(!count || count <= 0) return alert('정확한 수량을 입력하세요.');
 
-        // [2] 입고 페이지 저장 버튼 클릭
-        document.getElementById('btn-in-submit').addEventListener('click', () => {
-            const name = document.getElementById('in-name').value.trim() || '미지정 제품';
-            const spec = document.getElementById('in-spec').value.trim() || '-';
-            const qty = parseInt(document.getElementById('in-qty').value) || 0;
-
-            if(qty <= 0) { alert('입고 갯수를 확인해 주세요.'); return; }
-
-            const currentTime = getNowDateTime(); // ⏱️ 시간 자동 기록
-
-            // 1. 재고 마스터 업데이트
-            let target = products.find(p => p.name === name);
-            if(!target) {
-                target = { name: name, spec: spec, currentQty: qty };
-                products.push(target);
+            const { error } = await supabase.from('stock_logs').insert([{ type, item_name: itemName, count, note }]);
+            
+            if (error) {
+                alert('기록 실패: ' + error.message);
             } else {
-                target.currentQty += qty;
+                alert(`${itemName} ${count}개 ${type} 완료!`);
+                document.getElementById(`${prefix}Count`).value = '';
+                document.getElementById(`${prefix}Note`).value = '';
             }
+        }
 
-            // 2. 변동 히스토리 기록 추가
-            historyLogs.unshift({
-                productName: name,
-                type: '입고',
-                spec: spec,
-                qty: qty,
-                date: currentTime // 자동 등록된 일시 저장
-            });
+        // 4. 전체 현황 불러오기 (모바일에 최적화된 타임라인 리스트 형태)
+        async function loadLogs() {
+            const logList = document.getElementById('logList');
+            logList.innerHTML = '로딩 중...';
 
-            // 입력창 청소
-            document.getElementById('in-name').value = '';
-            document.getElementById('in-spec').value = '';
-            document.getElementById('in-qty').value = '1';
+            const { data, error } = await supabase.from('stock_logs').select('*').order('created_at', { ascending: false });
+            if (error) return logList.innerHTML = '데이터를 불러오지 못했습니다.';
 
-            alert('입고 처리가 완료되어 저장되었습니다!');
-            saveToStorage();
-        });
-
-        // [3] 출고 페이지 저장 버튼 클릭
-        document.getElementById('btn-out-submit').addEventListener('click', () => {
-            const modelName = document.getElementById('out-model').value.trim() || '미지정 모델';
-            const spec = document.getElementById('out-spec').value.trim() || '-';
-            const qty = parseInt(document.getElementById('out-qty').value) || 0;
-
-            if(qty <= 0) { alert('출고 갯수를 확인해 주세요.'); return; }
-
-            const currentTime = getNowDateTime(); // ⏱️ 시간 자동 기록
-
-            // 1. 재고 마스터 업데이트 (출고는 재고에서 차감, 모델명을 제품명 기조로 매칭)
-            let target = products.find(p => p.name === modelName);
-            if(!target) {
-                target = { name: modelName, spec: spec, currentQty: -qty };
-                products.push(target);
-            } else {
-                target.currentQty -= qty;
-            }
-
-            // 2. 변동 히스토리 기록 추가
-            historyLogs.unshift({
-                productName: modelName,
-                type: '출고',
-                spec: spec,
-                qty: qty,
-                date: currentTime // 자동 등록된 일시 저장
-            });
-
-            document.getElementById('out-model').value = '';
-            document.getElementById('out-spec').value = '';
-            document.getElementById('out-qty').value = '1';
-
-            alert('출고 처리가 완료되어 저장되었습니다!');
-            saveToStorage();
-        });
-
-        // [4] 재고 현황 그리기 (터치하면 아래로 일시/기록 완벽 표출)
-        function renderStatus() {
-            const container = document.getElementById('status-container');
-            const keyword = document.getElementById('search-bar').value.toLowerCase();
-            container.innerHTML = '';
-
-            const filtered = products.filter(p => p.name.toLowerCase().includes(keyword));
-
-            if(filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">등록된 내역이 없습니다. 먼저 입/출고 저장을 진행해 보세요.</div>`;
+            logList.innerHTML = '';
+            if(data.length === 0) {
+                logList.innerHTML = '<p style="text-align:center; color:#888;">입출고 내역이 없습니다.</p>';
                 return;
             }
 
-            filtered.forEach((p, idx) => {
-                // 현재 자재명과 매칭되는 입출고 이력만 시간순 필터링
-                const matchingLogs = historyLogs.filter(l => l.productName === p.name);
+            data.forEach(log => {
+                // UTC 시간을 현지(한국) 날짜 및 시간으로 분리 변환
+                const dt = new Date(log.created_at);
+                const dateStr = dt.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                const timeStr = dt.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
-                let logHtml = '';
-                if(matchingLogs.length === 0) {
-                    logHtml = `<div class="p-2 text-xs text-gray-400 text-center">기록된 이력이 없습니다.</div>`;
-                } else {
-                    matchingLogs.forEach(l => {
-                        const typeColor = l.type === '입고' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
-                        logHtml += `
-                            <div class="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-none text-xs">
-                                <div>
-                                    <span class="px-1.5 py-0.5 rounded font-black text-[10px] mr-2 ${typeColor}">${l.type}</span>
-                                    <span class="text-gray-600 font-mono font-bold">${l.date}</span> <!-- ⏱️ 여기에 날짜/시간 강제 출력 -->
-                                </div>
-                                <div class="text-right">
-                                    <span class="font-bold text-gray-900">${l.qty} 개</span>
-                                    <span class="text-[10px] text-gray-400 block mt-0.5">상세: ${l.spec}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-
-                const pCard = document.createElement('div');
-                pCard.className = "bg-white rounded-xl border border-gray-200 shadow-2xs overflow-hidden";
-                pCard.innerHTML = `
-                    <div onclick="window.toggleAccordion('panel-${idx}')" class="p-4 flex justify-between items-center bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer select-none">
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900">${p.name}</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">상세스펙: ${p.spec}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-black text-blue-600">${p.currentQty} 개</span>
-                            <span class="material-icons text-gray-400 text-sm" id="icon-panel-${idx}">expand_more</span>
-                        </div>
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `log-item ${log.type === '입고' ? 'in' : 'out'}`;
+                
+                itemDiv.innerHTML = `
+                    <div class="log-header">
+                        <span style="font-weight:bold; color:${log.type === '입고' ? '#0d6efd' : '#dc3545'}">[${log.type}]</span>
+                        <span>${dateStr} ${timeStr}</span>
                     </div>
-                    <div id="panel-${idx}" class="hidden bg-gray-50 border-t border-gray-100 p-4 space-y-1">
-                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">📜 변동 히스토리 내역 (시간 자동포함)</div>
-                        ${logHtml}
+                    <div class="log-body">
+                        ${log.item_name} : ${log.count}개
                     </div>
+                    ${log.note ? `<div class="log-note">💡 ${log.note}</div>` : ''}
                 `;
-                container.appendChild(pCard);
+                logList.appendChild(itemDiv);
             });
         }
-
-        // 아코디언 토글 제어
-        window.toggleAccordion = function(panelId) {
-            const panel = document.getElementById(panelId);
-            const icon = document.getElementById('icon-' + panelId);
-            if(panel.classList.contains('hidden')) {
-                panel.classList.remove('hidden');
-                icon.innerText = 'expand_less';
-            } else {
-                panel.classList.add('hidden');
-                icon.innerText = 'expand_more';
-            }
-        };
-
-        // 검색 기능
-        document.getElementById('search-bar').addEventListener('input', renderStatus);
-
-        // 하단 탭 스위칭 
-        window.switchTab = function(tabId) {
-            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById('view-' + tabId).classList.remove('hidden');
-            document.getElementById('nav-' + tabId).classList.add('active');
-            
-            const titles = { home: '🏠 홈: 제품 마스터', in: '📥 입고 관리', out: '📤 출고 관리', status: '📋 현재고 현황' };
-            document.getElementById('page-title').innerText = titles[tabId];
-        };
-
-        // 최초 로딩 실행
-        renderStatus();
     </script>
 </body>
 </html>
